@@ -1,0 +1,12 @@
+{
+  "name": "whoop-mcp",
+  "version": "0.0.1",
+  "description": "Local MCP server for personal Whoop data. Your agent as the access layer for your own health data.",
+  "author": "Ray Data Co",
+  "mcp_servers": {
+    "whoop": {
+      "command": "uvx",
+      "args": ["--from", "rdco-whoop-mcp", "whoop-mcp-server"]
+    }
+  }
+}
