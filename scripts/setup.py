@@ -71,7 +71,21 @@ def _print_app_setup_instructions() -> None:
     )
 
 
-def _prompt(label: str, secret: bool = False) -> str:
+def _prompt(label: str, secret: bool = False, env_var: str | None = None) -> str:
+    """Prompt for a value, with optional env-var override.
+
+    If env_var is set and present in os.environ, use that value (no prompt).
+    Useful for piping from 1Password CLI or other secret managers without
+    shell-history exposure or copy-paste of secrets.
+
+    Example:
+        WHOOP_CLIENT_ID=$(op read "op://Vault/Item/client id") \
+        WHOOP_CLIENT_SECRET=$(op read "op://Vault/Item/client secret") \
+        uvx --from rdco-whoop-mcp whoop-mcp-setup
+    """
+    if env_var and os.environ.get(env_var):
+        print(f"{label}: <from ${env_var}>")
+        return os.environ[env_var].strip()
     if secret:
         import getpass
         return getpass.getpass(f"{label}: ").strip()
@@ -184,8 +198,15 @@ def main() -> None:
     print("\nwhoop-mcp setup wizard\n")
     _print_app_setup_instructions()
 
-    client_id = _prompt("Paste your Whoop Client ID")
-    client_secret = _prompt("Paste your Whoop Client Secret", secret=True)
+    client_id = _prompt(
+        "Paste your Whoop Client ID",
+        env_var="WHOOP_CLIENT_ID",
+    )
+    client_secret = _prompt(
+        "Paste your Whoop Client Secret",
+        secret=True,
+        env_var="WHOOP_CLIENT_SECRET",
+    )
     if not (client_id and client_secret):
         print("ERROR: Client ID and Client Secret are required.", file=sys.stderr)
         sys.exit(1)
