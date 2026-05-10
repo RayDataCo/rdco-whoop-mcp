@@ -60,7 +60,7 @@ You create your own OAuth app at developer.whoop.com. The author of this MCP nev
 
 1. Go to <https://developer.whoop.com/> and sign in with your Whoop account.
 2. Create a new app. Any name works (e.g. `personal-mcp`).
-3. **Redirect URI:** `http://127.0.0.1:8080/callback` (must match exactly).
+3. **Redirect URI:** `http://127.0.0.1:53682/callback` (must match exactly). Port 53682 follows the gcloud/Stripe-CLI convention - uncommon enough to rarely collide with local dev tools (unlike 8080, which is heavily used by Tomcat, dev servers, etc.). If 53682 is in use on your machine, set `WHOOP_MCP_REDIRECT_PORT` env var to a free port and ALSO add `http://127.0.0.1:<your-port>/callback` to your Whoop OAuth app's redirect URI list (Whoop allows multiple).
 4. **Scopes:** `read:recovery`, `read:cycles`, `read:sleep`, `read:workout`, `read:profile`, `read:body_measurement`, `offline`.
 5. Save, then copy the **Client ID** and **Client Secret**.
 6. Run `uvx --from rdco-whoop-mcp whoop-mcp-setup` and paste them when prompted.

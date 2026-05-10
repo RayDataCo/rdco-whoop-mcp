@@ -3,7 +3,7 @@
 Walks the user through:
   1. Creating an OAuth app at developer.whoop.com (instructions printed)
   2. Pasting Client ID + Client Secret
-  3. Authorization-code OAuth flow (browser + local callback on 127.0.0.1:8080)
+  3. Authorization-code OAuth flow (browser + local callback on 127.0.0.1:53682)
   4. Token storage via the auth abstraction
   5. Smoke-test against /v2/user/profile/basic
 """
@@ -15,6 +15,7 @@ import base64
 import hashlib
 import http.server
 import json
+import os
 import secrets
 import sys
 import threading
@@ -33,7 +34,13 @@ from whoop_mcp.client import (
 )
 
 REDIRECT_HOST = "127.0.0.1"
-REDIRECT_PORT = 8080
+# Port 53682 chosen to match the gcloud / many-OAuth-CLI default. Uncommon enough
+# to rarely collide with dev tools (vs the heavily-used 8080), high enough to
+# avoid privileged-port issues, deterministic so it can be pre-registered as the
+# Whoop OAuth app's redirect URI. Override with WHOOP_MCP_REDIRECT_PORT env var
+# if the chosen port is in use locally; you must then add the corresponding
+# http://127.0.0.1:<port>/callback URI to your Whoop OAuth app config.
+REDIRECT_PORT = int(os.environ.get("WHOOP_MCP_REDIRECT_PORT", "53682"))
 REDIRECT_PATH = "/callback"
 REDIRECT_URI = f"http://{REDIRECT_HOST}:{REDIRECT_PORT}{REDIRECT_PATH}"
 
