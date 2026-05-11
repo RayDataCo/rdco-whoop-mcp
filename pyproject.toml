@@ -1,6 +1,6 @@
 [project]
 name = "rdco-whoop-mcp"
-version = "0.0.1"
+version = "0.0.2"
 description = "Local MCP server for personal Whoop data. Your agent as the access layer for your own health data."
 readme = "README.md"
 requires-python = ">=3.11"

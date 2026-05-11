@@ -79,6 +79,21 @@ async def whoop_get_profile() -> str:
     return json.dumps(profile, indent=2)
 
 
+async def whoop_get_body_measurements(start_date: str, end_date: str) -> str:
+    """Fetch historical body-composition measurements (height, weight,
+    max_heart_rate) for the given date range. Returns JSON with paginated
+    records. Date format: YYYY-MM-DD.
+
+    Note: as of Whoop API v2, the body-measurement endpoint typically returns
+    the latest single record rather than a true historical series. The date
+    range is sent as a best-effort filter.
+    """
+    start, end = _validate_date_range(start_date, end_date)
+    async with WhoopClient() as client:
+        records = await client.get_body_measurements(start, end)
+    return json.dumps({"count": len(records), "records": records}, indent=2)
+
+
 # Tool registry consumed by server.py ---------------------------------------
 
 TOOL_DEFINITIONS: list[dict[str, Any]] = [
@@ -158,5 +173,23 @@ TOOL_DEFINITIONS: list[dict[str, Any]] = [
             "properties": {},
         },
         "handler": whoop_get_profile,
+    },
+    {
+        "name": "whoop_get_body_measurements",
+        "description": (
+            "Fetch historical body-composition measurements (height, weight, "
+            "max_heart_rate) for a date range. Dates are ISO YYYY-MM-DD. "
+            "Note: Whoop API v2 currently returns the latest record rather than "
+            "a true series; the date range is a best-effort filter."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "start_date": {"type": "string", "description": "Start date YYYY-MM-DD"},
+                "end_date": {"type": "string", "description": "End date YYYY-MM-DD"},
+            },
+            "required": ["start_date", "end_date"],
+        },
+        "handler": whoop_get_body_measurements,
     },
 ]

@@ -19,6 +19,7 @@ from whoop_mcp.tools import (
     _to_rfc3339_end,
     _to_rfc3339_start,
     _validate_date_range,
+    whoop_get_body_measurements,
     whoop_get_profile,
     whoop_get_recovery,
 )
@@ -83,3 +84,21 @@ async def test_smoke_recovery_last_30_days():
     assert "records" in payload
     print(f"\nRecovery records in last 30 days: {payload['count']}")
     assert payload["count"] > 0, "Expected at least one recovery record in the last 30 days."
+
+
+@skip_unless_integration
+@pytest.mark.asyncio
+async def test_body_measurements_smoke():
+    today = date.today()
+    start = (today - timedelta(days=7)).isoformat()
+    end = today.isoformat()
+    raw = await whoop_get_body_measurements(start, end)
+    payload = json.loads(raw)
+    assert "records" in payload
+    assert "count" in payload
+    print(f"\nBody-measurement records in last 7 days: {payload['count']}")
+    # Endpoint may return zero or one record depending on whether the user has
+    # logged anything. Just assert the schema is well-formed.
+    if payload["count"] > 0:
+        rec = payload["records"][0]
+        assert isinstance(rec, dict), f"Expected dict record, got {type(rec).__name__}"
