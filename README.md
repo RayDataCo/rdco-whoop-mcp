@@ -4,9 +4,15 @@
 
 A local Model Context Protocol (MCP) server that exposes your personal Whoop API v2 data to Claude Code, Claude Desktop, or any MCP-compatible client. Read-only. Runs entirely on your machine. The author has no access to your data, your tokens, or your API usage.
 
+## v0.0.2 changelog
+
+- Added `whoop_get_body_measurements` tool for historical body-composition data (height, weight, max heart rate).
+- Made the 1Password vault and item names configurable via `WHOOP_MCP_OP_VAULT` and `WHOOP_MCP_OP_ITEM` env vars (default: `Personal` / `whoop-mcp`).
+- Investigated `whoop_get_journal_entries`: the v1 `/v1/user/journal_entry` endpoint is **not present in Whoop API v2**. Whoop's v1-to-v2 migration guide and changelog do not mention journal data. The tool is intentionally not shipped in v0.0.2; we will revisit if Whoop adds it back. See "Journal entries" below.
+
 ## What it does
 
-Five read tools, all returning JSON:
+Six read tools, all returning JSON:
 
 | Tool | Returns |
 |---|---|
@@ -15,6 +21,7 @@ Five read tools, all returning JSON:
 | `whoop_get_strain` | day strain, max HR, average HR, calories |
 | `whoop_get_workouts` | sport, duration, strain, calories |
 | `whoop_get_profile` | name, member-since, height, weight, baseline metrics |
+| `whoop_get_body_measurements` | historical height, weight, max heart rate (date range) |
 
 All date-range tools accept `start_date` and `end_date` as ISO `YYYY-MM-DD`.
 
@@ -75,14 +82,27 @@ This MCP runs entirely on your machine. The only network egress is **YOUR machin
 
 **Credential storage** is tiered. The wizard picks the strongest backend available:
 
-1. **1Password CLI** (`op`). If `op` is installed and signed in, credentials live in your `Personal` vault under the `whoop-mcp` item. Nothing on disk.
+1. **1Password CLI** (`op`). If `op` is installed and signed in, credentials live in your `Personal` vault under the `whoop-mcp` item by default. Nothing on disk. Override the vault and item names with the env vars below if your 1Password layout uses different names.
 2. **System keyring** (macOS Keychain, Linux secret-service, Windows Credential Manager) via the `keyring` Python library.
 3. **Fallback file** at `~/.config/whoop-mcp/credentials.json` with `0700` directory and `0600` file permissions. The wizard prints a warning when this fallback is used and recommends installing 1Password CLI or a system keyring.
+
+**1Password env-var overrides** (only relevant when using the 1Password backend):
+
+| Env var | Default | Purpose |
+|---|---|---|
+| `WHOOP_MCP_OP_VAULT` | `Personal` | Name of the 1Password vault to read/write credentials in. Useful if your account uses `Private`, a shared vault, or a per-project vault. |
+| `WHOOP_MCP_OP_ITEM` | `whoop-mcp` | Name of the 1Password item that holds the credential fields. Override if you want to namespace by user or environment. |
+
+Set them in the same shell that runs `whoop-mcp-setup` and `whoop-mcp-server` (e.g. add `export WHOOP_MCP_OP_VAULT=Private` to your shell profile, or set them in your MCP client's env block).
 
 You can rotate or revoke at any time:
 - Revoke the OAuth grant in your Whoop account settings.
 - Delete the keyring entry / file / 1Password item.
 - Re-run the setup wizard.
+
+## Journal entries
+
+Whoop API v1 used to expose journal entries (alcohol, caffeine, supplements, mood) via `/v1/user/journal_entry`. As of the v2 API surface documented at <https://developer.whoop.com/api/>, that endpoint is **not present**. Neither the v1-to-v2 migration guide nor the public changelog mentions journal data. Until Whoop publishes a v2 equivalent, this MCP does not expose a `whoop_get_journal_entries` tool. If you spot a re-introduction, file an issue and we will wire it up.
 
 ## Development
 
