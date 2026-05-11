@@ -220,3 +220,29 @@ class WhoopClient:
             "/v2/activity/workout",
             {"start": start, "end": end, "limit": 25},
         )
+
+    async def get_body_measurements(
+        self, start: str, end: str
+    ) -> list[dict[str, Any]]:
+        """Historical body-composition measurements for the date range.
+
+        Whoop API v2 exposes the latest body measurement record at
+        `/v2/user/measurement/body` (no date params on the public spec). We pass
+        the date range as a best-effort filter; if the endpoint ignores them and
+        returns a single current record, callers still get the latest value.
+        """
+        body = await self._request(
+            "GET",
+            "/v2/user/measurement/body",
+            params={"start": start, "end": end},
+        )
+        if body is None:
+            return []
+        if isinstance(body, dict) and "records" in body:
+            return body.get("records") or []
+        # Endpoint returns a single object rather than a paginated envelope.
+        if isinstance(body, dict):
+            return [body]
+        if isinstance(body, list):
+            return body
+        return []
