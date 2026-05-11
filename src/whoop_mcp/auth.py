@@ -30,8 +30,21 @@ logger = logging.getLogger(__name__)
 
 KEYRING_SERVICE = "rdco-whoop-mcp"
 KEYRING_USERNAME = "default"
-OP_VAULT = "Personal"
-OP_ITEM = "whoop-mcp"
+
+# 1Password vault + item are configurable so users whose vault is not named
+# "Personal" (e.g. "Private", a shared vault, or a per-project vault) don't
+# have to fork the package. Override via env vars before running setup or the
+# server.
+OP_VAULT_DEFAULT = "Personal"
+OP_ITEM_DEFAULT = "whoop-mcp"
+
+
+def _op_vault() -> str:
+    return os.environ.get("WHOOP_MCP_OP_VAULT") or OP_VAULT_DEFAULT
+
+
+def _op_item() -> str:
+    return os.environ.get("WHOOP_MCP_OP_ITEM") or OP_ITEM_DEFAULT
 
 CONFIG_DIR = Path.home() / ".config" / "whoop-mcp"
 CREDS_FILE = CONFIG_DIR / "credentials.json"
@@ -55,8 +68,10 @@ def _have_op() -> bool:
 
 
 def _op_read(field: str) -> str | None:
-    """Read a single field from the 1Password whoop-mcp item."""
-    ref = f"op://{OP_VAULT}/{OP_ITEM}/{field}"
+    """Read a single field from the configured 1Password item."""
+    vault = _op_vault()
+    item = _op_item()
+    ref = f"op://{vault}/{item}/{field}"
     try:
         result = subprocess.run(
             ["op", "read", ref],
@@ -72,15 +87,16 @@ def _op_read(field: str) -> str | None:
 
 
 def _op_write(field: str, value: str) -> bool:
-    """Write a single field to the 1Password whoop-mcp item.
+    """Write a single field to the configured 1Password item.
 
     Creates the item if absent. Best-effort. Returns True on success.
     """
-    # Try edit first, then create on failure.
-    ref = f"{OP_ITEM}.{field}"
+    vault = _op_vault()
+    item = _op_item()
+    ref = f"{item}.{field}"
     try:
         edit = subprocess.run(
-            ["op", "item", "edit", OP_ITEM, f"{field}={value}", "--vault", OP_VAULT],
+            ["op", "item", "edit", item, f"{field}={value}", "--vault", vault],
             capture_output=True,
             text=True,
             timeout=10,
@@ -92,8 +108,8 @@ def _op_write(field: str, value: str) -> bool:
             [
                 "op", "item", "create",
                 "--category", "API Credential",
-                "--title", OP_ITEM,
-                "--vault", OP_VAULT,
+                "--title", item,
+                "--vault", vault,
                 f"{field}={value}",
             ],
             capture_output=True,
